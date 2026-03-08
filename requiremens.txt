@@ -1,0 +1,118 @@
+# ==================== 基础核心依赖 ====================
+python-dotenv==1.0.1                # 加载.env环境变量
+python-dateutil==2.9.0.post0        # 日期时间处理
+pytz==2024.2                        # 时区处理
+tzdata==2024.2                      # 时区数据
+six==1.16.0                         # Python2/3兼容工具
+typing_extensions==4.12.2           # 类型提示扩展
+packaging==24.1                     # 包版本管理
+setuptools==72.1.0                  # 包构建工具
+pip==25.0.1                         # pip包管理器
+
+# ==================== 深度学习核心（PyTorch） ====================
+torch==2.4.1+cu121                  # PyTorch核心（CUDA 12.1版本）
+torchaudio==2.4.1+cu121             # PyTorch音频处理
+torchvision==0.19.1+cu121           # PyTorch视觉处理
+torchsummary==1.5.1                 # PyTorch模型结构查看
+timm==1.0.19                        # 预训练模型库
+ultralytics==8.3.7                  # YOLO系列模型（目标检测/疾病识别）
+efficientnet_pytorch==0.7.1         # EfficientNet模型
+grad-cam==1.5.4                     # 模型可视化（Grad-CAM）
+ttach==0.0.3                        # 测试时数据增强
+
+# ==================== 数值计算与数据处理 ====================
+numpy==1.24.3                       # 数值计算基础
+pandas==2.0.3                       # 表格数据处理
+scipy==1.10.1                       # 科学计算
+scikit-learn==1.3.0                 # 机器学习算法
+joblib==1.4.2                       # 模型序列化
+threadpoolctl==3.5.0                # 线程池控制
+py-cpuinfo==9.0.0                   # CPU信息查看
+
+# ==================== 数据可视化 ====================
+matplotlib==3.7.5                   # 基础绘图
+matplotlib-inline==0.1.6            # Notebook内联绘图
+seaborn==0.13.2                     # 高级可视化
+pyparsing==3.1.4                    # 绘图语法解析
+cycler==0.12.1                      # 绘图样式循环
+contourpy==1.1.1                    # 等高线绘制
+kiwisolver==1.4.7                   # 绘图布局优化
+
+# ==================== 计算机视觉 ====================
+opencv-python==4.10.0.84            # OpenCV（图像处理）
+Pillow==10.4.0                      # 图像处理（PIL）
+pycocotools==2.0.7                  # COCO数据集工具
+
+# ==================== 数据库相关 ====================
+PyMySQL==1.1.2                      # MySQL数据库驱动
+SQLAlchemy==2.0.47                  # 数据库ORM框架
+
+# ==================== Web服务与认证 ====================
+fastapi==0.124.4                    # FastAPI Web框架
+starlette==0.44.0                   # FastAPI底层ASGI框架
+uvicorn==0.24.0（注：列表未显示，按适配版本补充） # FastAPI运行服务器
+python-multipart==0.0.20            # 文件上传处理
+PyJWT==2.9.0                        # JWT令牌生成/验证
+passlib==1.7.4                      # 密码哈希处理
+requests==2.32.3                    # HTTP请求
+idna==3.7                           # 域名解析
+charset-normalizer==3.3.2           # 字符编码处理
+certifi==2024.8.30                  # SSL证书验证
+PySocks==1.7.1                      # SOCKS代理（可选）
+
+# ==================== 数据文件处理 ====================
+openpyxl==3.1.5                     # Excel文件读写（xlsx）
+xlrd==2.0.2                         # Excel文件读取（xls）
+xlsxwriter==3.2.9                   # Excel文件写入
+python-pptx==1.0.2                  # PPT文件处理
+lxml==6.0.2                         # XML/HTML解析
+beautifulsoup4==4.12.3              # HTML解析
+soupsieve==2.5                      # CSS选择器解析
+
+# ==================== 工具类依赖 ====================
+tqdm==4.66.5                        # 进度条显示
+colorama==0.4.6                     # 终端颜色输出
+click==8.1.8                        # 命令行工具
+pathlib（内置）                     # 路径处理（Python内置，无需添加）
+fsspec==2024.9.0                    # 文件系统抽象
+pooch==1.7.0                        # 数据下载工具
+portalocker==3.0.0                  # 文件锁
+h5py==3.11.0                        # HDF5文件处理
+networkx==3.1                       # 图结构处理
+sympy==1.3.0                        # 符号计算
+mpmath==1.3.0                       # 高精度数学计算
+
+# ==================== 开发/调试工具 ====================
+pytest==8.3.5                       # 单元测试
+pluggy==1.5.0                       # 测试插件
+iniconfig==2.1.0                    # 配置文件处理
+tomli==2.2.1                        # TOML文件解析
+debugpy==1.6.7                      # 调试工具
+psutil==5.9.0                       # 系统资源监控
+
+# ==================== Jupyter相关（可选，按需删除） ====================
+ipython==8.12.2                     # 交互式Python
+ipykernel==6.28.0                   # Jupyter内核
+jupyter_core==5.7.2                 # Jupyter核心
+jupyter_client==7.4.9               # Jupyter客户端
+notebook==6.5.7                     # Jupyter Notebook
+nbconvert==7.10.0                   # Notebook转换
+nbformat==5.9.2                     # Notebook格式
+traitlets==5.14.3                   # Jupyter特性
+prompt-toolkit==3.0.43              # 交互式提示
+Pygments==2.15.1                    # 代码高亮
+asttokens==2.0.5                    # AST令牌处理
+stack-data==0.2.0                   # 堆栈数据
+pure-eval==0.8.3                    # 纯代码评估
+executing==0.8.3                    # 代码执行跟踪
+jedi==0.19.1                        # 代码补全
+parso==0.8.3                        # 语法分析
+
+# ==================== 其他辅助依赖 ====================
+Flask==3.0.3                        # Flask Web框架（备用）
+itsdangerous==2.2.1                 # Flask安全工具
+blinker==1.8.2                      # 信号处理
+huggingface-hub==0.34.4             # HuggingFace模型仓库
+safetensors==0.5.3                  # 安全张量文件
+selenium==4.24.0                    # 网页自动化（可选）
+kagglehub==0.2.9                    # Kaggle数据集下载
