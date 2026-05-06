@@ -20,7 +20,8 @@ API_PORT = 8000
 # Vite 前端开发服务器配置
 VITE_HOST = "0.0.0.0"
 VITE_PORT = 3000
-# 前端代理的后端目标地址（开发环境）
+
+# 后端地址（开发环境）
 VITE_API_TARGET = "http://localhost:8000"
 
 # ==================== 模型配置 ====================
@@ -38,7 +39,7 @@ IMAGE_NORMALIZE_MEAN = [0.485, 0.456, 0.406]  # ImageNet 均值
 IMAGE_NORMALIZE_STD = [0.229, 0.224, 0.225]   # ImageNet 标准差
 
 # 推理设备配置 ("cuda", "cpu", 或 "auto" 自动选择)
-INFERENCE_DEVICE = "auto"
+INFERENCE_DEVICE = "cuda"
 
 # ==================== 文件上传配置 ====================
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")

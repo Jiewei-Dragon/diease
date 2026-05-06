@@ -16,7 +16,6 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    code: str = Field(..., description="验证码（必填）")  # binding:"required" 对应 ...
     phone: str = Field(..., description="手机号（必填）")  # binding:"required" 对应 ...
     password: str = Field(None, min_length=6, max_length=20, description="密码（可选，6-20位）")  # binding:"omitempty,min=6,max=20"
     repeat_password: str = Field(None, min_length=6, max_length=20, description="重复密码（可选，6-20位）")  # binding:"omitempty,min=6,max=20"

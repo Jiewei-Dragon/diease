@@ -10,7 +10,7 @@
           </svg>
         </div>
         <h1 class="register-title">葡萄叶部病害识别系统</h1>
-        <p class="register-subtitle">注册新账号，开始使用</p>
+        <p class="register-subtitle">注册新账号,开始使用</p>
       </div>
 
       <form @submit.prevent="register" class="register-form">
@@ -35,33 +35,33 @@
           <span v-if="phoneError" class="error-message">{{ phoneError }}</span>
         </div>
 
-        <div class="form-group">
-          <label for="code">验证码</label>
-          <div class="input-wrapper code-wrapper">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <input 
-              id="code"
-              type="text" 
-              v-model="code" 
-              placeholder="请输入验证码" 
-              required 
-              maxlength="6"
-              pattern="\d{6}"
-              :disabled="loading"
-            />
-            <button 
-              type="button" 
-              class="btn-code"
-              @click="sendCode"
-              :disabled="!canSendCode || countdown > 0 || loading"
-            >
-              {{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }}
-            </button>
-          </div>
-          <span v-if="codeError" class="error-message">{{ codeError }}</span>
-        </div>
+        <!-- Deleted:<div class="form-group"> -->
+        <!-- Deleted:<label for="code">验证码</label> -->
+        <!-- Deleted:<div class="input-wrapper code-wrapper"> -->
+        <!-- Deleted:<svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> -->
+        <!-- Deleted:<path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> -->
+        <!-- Deleted:</svg> -->
+        <!-- Deleted:<input  -->
+        <!-- Deleted:id="code" -->
+        <!-- Deleted:type="text"  -->
+        <!-- Deleted:v-model="code"  -->
+        <!-- Deleted:placeholder="请输入验证码"  -->
+        <!-- Deleted:required  -->
+        <!-- Deleted:maxlength="6" -->
+        <!-- Deleted:pattern="\d{6}" -->
+        <!-- Deleted::disabled="loading" -->
+        <!-- Deleted:/> -->
+        <!-- Deleted:<button  -->
+        <!-- Deleted:type="button"  -->
+        <!-- Deleted:class="btn-code" -->
+        <!-- Deleted:@click="sendCode" -->
+        <!-- Deleted::disabled="!canSendCode || countdown > 0 || loading" -->
+        <!-- Deleted:> -->
+        <!-- Deleted:{{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }} -->
+        <!-- Deleted:</button> -->
+        <!-- Deleted:</div> -->
+        <!-- Deleted:<span v-if="codeError" class="error-message">{{ codeError }}</span> -->
+        <!-- Deleted:</div> -->
 
         <div class="form-group">
           <label for="password">密码</label>
@@ -159,13 +159,10 @@ export default {
   data() {
     return {
       phone: "",
-      code: "",
       password: "",
       confirmPassword: "",
       loading: false,
-      countdown: 0,
       phoneError: "",
-      codeError: "",
       passwordError: "",
       confirmPasswordError: "",
       showPassword: false,
@@ -180,11 +177,9 @@ export default {
     isFormValid() {
       return (
         this.canSendCode &&
-        this.code.length === 6 &&
         this.password.length >= 6 &&
         this.password === this.confirmPassword &&
         !this.phoneError &&
-        !this.codeError &&
         !this.passwordError &&
         !this.confirmPasswordError
       );
@@ -217,34 +212,6 @@ export default {
         this.confirmPasswordError = "";
       }
     },
-    async sendCode() {
-      if (!this.canSendCode || this.countdown > 0 || this.loading) return;
-
-      this.loading = true;
-      this.codeError = "";
-
-      try {
-        await this.$api.sendRegisterCode({
-          phone: this.phone
-        });
-        
-        // 开始倒计时
-        this.countdown = 60;
-        const timer = setInterval(() => {
-          this.countdown--;
-          if (this.countdown <= 0) {
-            clearInterval(timer);
-          }
-        }, 1000);
-        
-        alert("验证码已发送，请查收短信");
-      } catch (error) {
-        this.codeError = error.response?.data?.message || "验证码发送失败，请稍后重试";
-        alert(this.codeError);
-      } finally {
-        this.loading = false;
-      }
-    },
     async register() {
   if (this.loading || !this.isFormValid) return;
 
@@ -252,7 +219,6 @@ export default {
   try {
     await this.$api.register({
       phone: this.phone,
-      code: this.code,
       password: this.password,
       repeat_password: this.password
     });
@@ -407,35 +373,9 @@ export default {
   cursor: not-allowed;
 }
 
-.code-wrapper input {
-  padding-right: 130px;
-}
 
-.btn-code {
-  position: absolute;
-  right: 8px;
-  padding: 8px 16px;
-  background: var(--white);
-  color: var(--primary-blue);
-  border: 1px solid var(--primary-blue);
-  border-radius: var(--border-radius-sm);
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: var(--transition);
-}
 
-.btn-code:hover:not(:disabled) {
-  background: var(--ultra-light-blue);
-}
 
-.btn-code:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--gray-500);
-}
 
 .btn-toggle-password {
   position: absolute;
@@ -576,14 +516,7 @@ export default {
     font-size: 24px;
   }
 
-  .code-wrapper input {
-    padding-right: 120px;
-  }
 
-  .btn-code {
-    font-size: 12px;
-    padding: 6px 12px;
-  }
 
   .circle-1 {
     width: 200px;

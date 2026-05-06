@@ -264,7 +264,7 @@ async def get_user_detail(
 async def ban_user(
         user_id: int,
         current_user_id: int = Query(..., description="当前管理员ID"),
-        is_banned: int = Body(..., description="是否封禁：1-封禁，0-解封"),
+        is_banned: int = Body(..., embed=True, description="是否封禁：1-封禁，0-解封"),
         db: Session = Depends(get_db)
 ):
     try:
@@ -306,14 +306,74 @@ async def ban_user(
         raise HTTPException(status_code=500, detail=f"操作失败：{str(e)}")
 
 
+@user_router.put("/users/{user_id}/role", summary="切换用户角色（仅管理员）")
+async def toggle_user_role(
+        user_id: int,
+        current_user_id: int = Query(..., description="当前管理员ID"),
+        db: Session = Depends(get_db)
+):
+    """
+    切换用户角色：普通用户 <-> 管理员
+    注意：不能修改自己的角色
+    """
+    try:
+        # 验证当前用户是否为管理员
+        current_user = db.query(TbUser).filter(TbUser.ID == current_user_id).first()
+        if not current_user or current_user.IsAdmin != 1:
+            raise HTTPException(status_code=403, detail="无权限访问")
+        
+        # 查询目标用户
+        user = db.query(TbUser).filter(TbUser.ID == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        
+        # 防止管理员修改自己的角色
+        if user_id == current_user_id:
+            raise HTTPException(status_code=400, detail="不能修改自己的角色")
+        
+        # 切换角色
+        new_role = 0 if user.IsAdmin == 1 else 1
+        user.IsAdmin = new_role
+        
+        try:
+            db.commit()
+            db.refresh(user)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"操作失败：{str(e)}")
+        
+        role_name = "管理员" if new_role == 1 else "普通用户"
+        return {
+            "code": 200,
+            "message": f"角色已切换为{role_name}",
+            "data": {
+                "id": user.ID,
+                "is_admin": user.IsAdmin
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"操作失败：{str(e)}")
+
+
 @user_router.put("/users/{user_id}/password", summary="修改用户密码")
 async def change_password(
         user_id: int,
         current_user_id: int = Query(..., description="当前用户ID"),
-        password: str = Body(..., description="新密码"),
+        request_data: dict = Body(..., description="请求数据"),
         db: Session = Depends(get_db)
 ):
     try:
+        # 验证用户只能修改自己的密码
+        if user_id != current_user_id:
+            raise HTTPException(status_code=403, detail="无权限修改其他用户的密码")
+        
+        password = request_data.get("password")
+        if not password:
+            raise HTTPException(status_code=400, detail="密码不能为空")
+        
         user = db.query(TbUser).filter(TbUser.ID == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="用户不存在")

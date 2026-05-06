@@ -63,6 +63,25 @@
           <div class="section-header">
             <h2 class="section-title">历史记录</h2>
             <div class="section-actions">
+              <div class="search-box">
+                <input
+                  v-model="searchKeyword"
+                  @keyup.enter="handleSearch"
+                  type="text"
+                  placeholder="搜索疾病名称或序号..."
+                  class="search-input"
+                />
+                <button @click="handleSearch" class="btn-search" :disabled="loading">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12C21 16.9706 16.0796 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <select v-model="sortBy" @change="handleSort" class="sort-select">
+                <option value="time_desc">时间倒序（最新）</option>
+                <option value="time_asc">时间正序（最早）</option>
+                <option value="result">识别结果（A-Z）</option>
+              </select>
               <button @click="refreshRecords" class="btn-icon" title="刷新">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -228,7 +247,9 @@ export default {
       pageSize: 10,
       loading: false,
       showModal: false,
-      selectedRecord: null
+      selectedRecord: null,
+      searchKeyword: '',
+      sortBy: 'time_desc'
     };
   },
   computed: {
@@ -292,11 +313,23 @@ export default {
           throw new Error('未找到用户ID，请重新登录');
         }
 
-        const response = await this.$api.getRecordList({
+        const params = {
           user_id: userInfo.id,
           page: page,
           page_size: this.pageSize
-        });
+        };
+
+        // 添加搜索关键词
+        if (this.searchKeyword && this.searchKeyword.trim()) {
+          params.keyword = this.searchKeyword.trim();
+        }
+
+        // 添加排序方式
+        if (this.sortBy) {
+          params.sort_by = this.sortBy;
+        }
+
+        const response = await this.$api.getRecordList(params);
         
         if (response.code === 200 && response.data) {
           this.records = response.data.list || [];
@@ -318,6 +351,12 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    handleSearch() {
+      this.fetchRecords(1);
+    },
+    handleSort() {
+      this.fetchRecords(1);
     },
     async deleteRecord(index, recordId) {
       if (!confirm('确定要删除这条记录吗？')) {
@@ -572,7 +611,67 @@ export default {
 
 .section-actions {
   display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.search-input {
+  padding: 8px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  width: 250px;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+}
+
+.btn-search {
+  padding: 8px 16px;
+  background: var(--primary-blue);
+  color: var(--white);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.btn-search:hover {
+  background: var(--primary-blue-hover);
+}
+
+.btn-search svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sort-select {
+  padding: 8px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  background: var(--white);
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 160px;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
 }
 
 .btn-icon {
@@ -612,6 +711,10 @@ export default {
   border-top-color: var(--primary-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 空状态 */
@@ -992,16 +1095,59 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .section-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .btn-search {
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+
+  .sort-select {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .btn-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
   .table-container {
     overflow-x: scroll;
   }
 
   .records-table {
     min-width: 600px;
-  }
-
-  .page-numbers {
-    display: none;
   }
 }
 </style>

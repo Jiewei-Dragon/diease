@@ -227,7 +227,7 @@ export const updateUser = (userId, current_user_id, data) => {
  * @returns {Promise}
  */
 export const updatePassword = (data) => {
-  return http.put(`/users/${data.user_id}/password`, { password: data.password });
+  return http.put(`/users/${data.user_id}/password`, { password: data.password }, { params: { current_user_id: data.user_id } });
 };
 
 /**
@@ -239,6 +239,16 @@ export const updatePassword = (data) => {
  */
 export const banUser = (userId, current_user_id, is_banned) => {
   return http.put(`/users/${userId}/ban`, { is_banned }, { params: { current_user_id } });
+};
+
+/**
+ * 切换用户角色（仅管理员）
+ * @param {number} userId - 用户ID
+ * @param {number} current_user_id - 当前管理员ID
+ * @returns {Promise}
+ */
+export const toggleUserRole = (userId, current_user_id) => {
+  return http.put(`/users/${userId}/role`, {}, { params: { current_user_id } });
 };
 
 /**

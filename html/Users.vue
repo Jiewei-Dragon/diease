@@ -71,7 +71,12 @@
                   <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td>{{ user.phone }}</td>
                   <td>
-                    <span :class="['role-badge', user.is_admin ? 'role-admin' : 'role-user']">
+                    <span
+                      :class="['role-badge', user.is_admin ? 'role-admin' : 'role-user']"
+                      @click="toggleRole(user)"
+                      style="cursor: pointer;"
+                      :title="user.is_admin ? '点击设为普通用户' : '点击设为管理员'"
+                    >
                       {{ user.is_admin ? '管理员' : '普通用户' }}
                     </span>
                   </td>
@@ -89,7 +94,7 @@
                         </svg>
                       </button>
                       <button 
-                        @click="toggleBan(user)" 
+                        @click.stop="toggleBan(user)"
                         :class="['btn-action', user.is_banned ? 'btn-unban' : 'btn-ban']"
                         :title="user.is_banned ? '解封' : '封禁'"
                       >
@@ -97,7 +102,7 @@
                           <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         <svg v-else viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12C15 13.6569 13.6569 15 12 15ZM12 2C7.58172 2 4 5.58172 4 10V12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12V10C20 5.58172 16.4183 2 12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12C15 13.6569 13.6569 15 12 15Z M12 2C7.58172 2 4 5.58172 4 10V12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12V10C20 5.58172 16.4183 2 12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                       </button>
                     </div>
@@ -374,6 +379,38 @@ export default {
         console.error(`${action}失败:`, error);
         alert(errorMsg);
       }
+    },
+    async toggleRole(user) {
+      const currentUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+      // 防止修改自己的角色
+      if (user.id === currentUser.id) {
+        alert('不能修改自己的角色');
+        return;
+      }
+
+      const action = user.is_admin ? '降级为普通用户' : '提升为管理员';
+      if (!confirm(`确定要${action}吗？`)) {
+        return;
+      }
+
+      try {
+        const response = await this.$api.toggleUserRole(user.id, currentUser.id);
+
+        if (response.code === 200) {
+          alert(response.message || '角色切换成功');
+          this.fetchUsers(this.currentPage);
+        } else {
+          throw new Error(response.message || '角色切换失败');
+        }
+      } catch (error) {
+        const errorMsg = error.response?.data?.detail ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        '角色切换失败';
+        console.error('角色切换失败:', error);
+        alert(errorMsg);
+      }
     }
   }
 };
@@ -625,11 +662,23 @@ export default {
 .role-admin {
   background: #fef3c7;
   color: #92400e;
+  transition: var(--transition);
+}
+
+.role-admin:hover {
+  background: #fde68a;
+  transform: scale(1.05);
 }
 
 .role-user {
   background: var(--ultra-light-blue);
   color: var(--primary-blue);
+  transition: var(--transition);
+}
+
+.role-user:hover {
+  background: var(--light-blue);
+  transform: scale(1.05);
 }
 
 .status-normal {

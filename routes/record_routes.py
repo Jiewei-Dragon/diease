@@ -165,22 +165,70 @@ async def get_records(
         user_id: int = Query(..., description="用户ID"),
         page: int = Query(1, ge=1, description="页码"),
         page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+        keyword: str = Query(None, description="搜索关键词（疾病名称/序号）"),
+        sort_by: str = Query("time_desc", description="排序方式：time_desc-时间倒序，time_asc-时间正序，result-识别结果"),
         db: Session = Depends(get_db)
 ):
     try:
+        from sqlalchemy import func
+        
+        # 构建基础查询
+        query = db.query(TbRecord).filter(TbRecord.UserId == user_id)
+        
+        # 关键词筛选
+        if keyword:
+            keyword = keyword.strip()
+            # 尝试将关键词转换为数字（序号搜索）
+            try:
+                keyword_int = int(keyword)
+                if keyword_int > 0:
+                    # 如果关键词是正整数，需要按用户专属序号搜索
+                    # 先获取该用户所有记录（按ID升序）
+                    all_user_records = db.query(TbRecord)\
+                        .filter(TbRecord.UserId == user_id)\
+                        .order_by(TbRecord.id.asc())\
+                        .all()
+                    
+                    # 找到对应序号的记录ID
+                    target_record_id = None
+                    if keyword_int <= len(all_user_records):
+                        target_record_id = all_user_records[keyword_int - 1].id
+                    
+                    # 如果找到了对应的记录ID，则按ID搜索；否则返回空结果
+                    if target_record_id:
+                        query = query.filter(
+                            (TbRecord.id == target_record_id) | 
+                            (TbRecord.DieaseName.like(f"%{keyword}%"))
+                        )
+                    else:
+                        # 序号超出范围，只按疾病名称搜索
+                        query = query.filter(TbRecord.DieaseName.like(f"%{keyword}%"))
+                else:
+                    # 非正整数，只按疾病名称搜索
+                    query = query.filter(TbRecord.DieaseName.like(f"%{keyword}%"))
+            except ValueError:
+                # 如果不是数字，按疾病名称搜索
+                query = query.filter(TbRecord.DieaseName.like(f"%{keyword}%"))
+        
+        # 查询总数
+        total = query.count()
+        
+        # 排序
+        if sort_by == "time_desc":
+            query = query.order_by(TbRecord.id.desc())
+        elif sort_by == "time_asc":
+            query = query.order_by(TbRecord.id.asc())
+        elif sort_by == "result":
+            query = query.order_by(TbRecord.DieaseName.asc())
+        else:
+            # 默认按时间倒序
+            query = query.order_by(TbRecord.id.desc())
+        
         # 计算偏移量
         offset = (page - 1) * page_size
         
-        # 查询总数
-        total = db.query(TbRecord).filter(TbRecord.UserId == user_id).count()
-        
-        # 分页查询（按时间倒序）
-        records = db.query(TbRecord)\
-            .filter(TbRecord.UserId == user_id)\
-            .order_by(TbRecord.id.desc())\
-            .offset(offset)\
-            .limit(page_size)\
-            .all()
+        # 分页查询
+        records = query.offset(offset).limit(page_size).all()
         
         # 格式化数据
         record_list = []
