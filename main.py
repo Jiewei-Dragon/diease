@@ -24,9 +24,9 @@ if __name__ == "__main__":
     import uvicorn
     # 配置端口为3000，开启热重载
     uvicorn.run(
-        "main:app",  # 指向你的app实例
-        host="0.0.0.0",  # 允许外部访问（可选）
-        port=8080,       # 指定端口
-        reload=True      # 热重载，开发环境使用
+        "main:app",
+        host=API_HOST,
+        port=API_PORT,
+        reload=True
     )
 

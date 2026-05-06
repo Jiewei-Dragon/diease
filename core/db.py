@@ -2,12 +2,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
-
-# 加载 .env 文件
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+from config import DATABASE_URL
 
 # 创建 MySQL 引擎（移除 SQLite 的 connect_args）
 engine = create_engine(DATABASE_URL)

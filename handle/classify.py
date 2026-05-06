@@ -14,39 +14,44 @@ import matplotlib.pyplot as plt
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam import *
 import numpy as np
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# 确定推理设备
+if INFERENCE_DEVICE == "auto":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+else:
+    device = torch.device(INFERENCE_DEVICE)
 
 # 确保目录存在，避免报错
-if os.path.exists(model_dir):
-    sys.path.append(model_dir)
+if os.path.exists(MODEL_DIR):
+    sys.path.append(MODEL_DIR)
 else:
-    raise FileNotFoundError(f"找不到 effiientNet 模块所在目录：{model_dir}")
+    raise FileNotFoundError(f"找不到模型权重文件所在目录：{MODEL_DIR}")
 
 def classifyAndHeat_from_image(image_path: str):
     try:
         # 1. 图片预处理
         img_original = Image.open(image_path).convert('RGB')
         transforms = torchvision.transforms.Compose([
-            torchvision.transforms.Resize(256),
-            torchvision.transforms.CenterCrop(224),
+            torchvision.transforms.Resize(IMAGE_SIZE_RESIZE),
+            torchvision.transforms.CenterCrop(IMAGE_SIZE_CROP),
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            torchvision.transforms.Normalize(IMAGE_NORMALIZE_MEAN, IMAGE_NORMALIZE_STD)
         ])
         img_tensor = transforms(img_original).to(device)
-        input_tensor = torch.unsqueeze(img_tensor, dim=0)  # (1, 3, 224, 224)
+        input_tensor = torch.unsqueeze(img_tensor, dim=0)
 
-        img_vis = img_original.resize((256, 256))  # PIL图片的resize
-        width, height = img_vis.size  # PIL图片的size
-        left = (width - 224) // 2
-        top = (height - 224) // 2
-        img_vis_cropped = img_vis.crop((left, top, left + 224, top + 224))  # PIL图片的crop
-        img_vis_np = np.array(img_vis_cropped, dtype=np.uint8)  # 转为numpy数组
+        img_vis = img_original.resize((IMAGE_SIZE_RESIZE, IMAGE_SIZE_RESIZE))
+        width, height = img_vis.size
+        left = (width - IMAGE_SIZE_CROP) // 2
+        top = (height - IMAGE_SIZE_CROP) // 2
+        img_vis_cropped = img_vis.crop((left, top, left + IMAGE_SIZE_CROP, top + IMAGE_SIZE_CROP))
+        img_vis_np = np.array(img_vis_cropped, dtype=np.uint8)
 
 
 
         # 2. 模型加载
-        model = torch.load(model_pth_path, map_location='cuda', weights_only=False)
-        model = model.to('cuda')  # 确保模型在GPU上
+        model = torch.load(MODEL_PTH_PATH, map_location=device, weights_only=False)
+        model = model.to(device)
         # 设置目标层
         target_layers = [model.features[-1]]
 

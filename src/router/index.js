@@ -4,6 +4,7 @@ import Register from '../../html/Register.vue'
 import Index from '../../html/Index.vue'
 import Record from '../../html/Record.vue'
 import Profile from '../../html/Profile.vue'
+import Users from '../../html/Users.vue'
 
 const routes = [
   {
@@ -39,6 +40,12 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'Users',
+    component: Users,
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
@@ -47,22 +54,23 @@ const router = createRouter({
   routes
 })
 
-// 导航守卫：检查登录状态
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   
-  // 如果路由需要认证
   if (to.meta.requiresAuth) {
     if (!token) {
-      // 未登录，提示并跳转到登录页
       alert('请先登录')
       next('/login')
     } else {
-      // 已登录，允许访问
-      next()
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      if (to.meta.requiresAdmin && userInfo.is_admin !== 1) {
+        alert('无权限访问')
+        next('/index')
+      } else {
+        next()
+      }
     }
   } else {
-    // 不需要认证的路由（如登录、注册），直接访问
     next()
   }
 })

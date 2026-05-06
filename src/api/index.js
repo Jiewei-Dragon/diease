@@ -34,10 +34,14 @@ http.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // 未授权，清除 token 并跳转到登录页
+          // 未授权，清除 token
           localStorage.removeItem('token');
           localStorage.removeItem('userInfo');
-          window.location.href = '/login';
+          // 只在当前不在登录页时才跳转
+          if (window.location.pathname !== '/login') {
+            alert('登录已过期，请重新登录');
+            window.location.href = '/login';
+          }
           break;
         case 403:
           // alert('没有权限访问');
@@ -100,7 +104,7 @@ export const register = (data) => {
  * @returns {Promise}
  */
 export const logout = () => {
-  return http.post('/api/user/logout');
+  return http.post('/logout');
 };
 
 /**
@@ -108,7 +112,7 @@ export const logout = () => {
  * @returns {Promise}
  */
 export const getUserInfo = () => {
-  return http.get('/api/user/info');
+  return http.get('/user/info');
 };
 
 
@@ -131,11 +135,9 @@ export const uploadImage = (formData) => {
 /**
  * 获取识别记录列表
  * @param {Object} params - 查询参数
+ * @param {number} params.user_id - 用户ID（必填）
  * @param {number} params.page - 页码（默认1）
- * @param {number} params.pageSize - 每页数量（默认10）
- * @param {string} params.diseaseType - 疾病类型（可选）
- * @param {string} params.startDate - 开始日期（可选）
- * @param {string} params.endDate - 结束日期（可选）
+ * @param {number} params.page_size - 每页数量（默认10）
  * @returns {Promise}
  */
 export const getRecordList = (params) => {
@@ -144,11 +146,12 @@ export const getRecordList = (params) => {
 
 /**
  * 获取单条识别记录详情
- * @param {string} id - 记录ID
+ * @param {number} id - 记录ID
+ * @param {number} user_id - 用户ID
  * @returns {Promise}
  */
-export const getRecordDetail = (id) => {
-  return http.get(`/records/${id}`);
+export const getRecordDetail = (id, user_id) => {
+  return http.get(`/records/${id}`, { params: { user_id } });
 };
 
 /**
@@ -156,39 +159,100 @@ export const getRecordDetail = (id) => {
  * @param {Object} data - 保存的记录数据
  * @returns {Promise}
  */
-export const addRecord = (data) => { // 修正语法：=> 改为 =，并接收参数data
-  return http.post(`/record/add`, data); // 传递请求体参数
+export const addRecord = (data) => {
+  return http.post('/record/add', data);
 };
 
 /**
  * 删除识别记录
- * @param {string} id - 记录ID
+ * @param {number} id - 记录ID
+ * @param {number} user_id - 用户ID
  * @returns {Promise}
  */
-export const deleteRecord = (id) => {
-  return http.delete(`/records/${id}`);
+export const deleteRecord = (id, user_id) => {
+  return http.delete(`/records/${id}`, { params: { user_id } });
 };
-
-/**
- * 批量删除识别记录
- * @param {Object} data - 删除信息
- * @param {Array<string>} data.ids - 记录ID数组
- * @returns {Promise}
- */
-export const batchDeleteRecords = (data) => {
-  return http.post('/api/records/batch-delete', data);
-};
-
 
 /**
  * 获取统计数据
  * @param {Object} params - 查询参数
- * @param {string} params.startDate - 开始日期（可选）
- * @param {string} params.endDate - 结束日期（可选）
+ * @param {number} params.user_id - 用户ID（必填）
  * @returns {Promise}
  */
 export const getStatistics = (params) => {
-  return http.get('/api/records/statistics', { params });
+  return http.get('/records/statistics', { params });
+};
+
+// ==================== 用户管理接口 ====================
+
+/**
+ * 获取用户列表（仅管理员）
+ * @param {Object} params - 查询参数
+ * @param {number} params.current_user_id - 当前管理员ID
+ * @param {number} params.page - 页码
+ * @param {number} params.page_size - 每页数量
+ * @param {string} params.keyword - 搜索关键词
+ * @returns {Promise}
+ */
+export const getUserList = (params) => {
+  return http.get('/users', { params });
+};
+
+/**
+ * 获取用户详情（仅管理员）
+ * @param {number} userId - 用户ID
+ * @param {number} current_user_id - 当前管理员ID
+ * @returns {Promise}
+ */
+export const getUserDetail = (userId, current_user_id) => {
+  return http.get(`/users/${userId}`, { params: { current_user_id } });
+};
+
+/**
+ * 更新用户信息（仅管理员）
+ * @param {number} userId - 用户ID
+ * @param {number} current_user_id - 当前管理员ID
+ * @param {Object} data - 更新数据
+ * @returns {Promise}
+ */
+export const updateUser = (userId, current_user_id, data) => {
+  return http.put(`/users/${userId}`, data, { params: { current_user_id } });
+};
+
+/**
+ * 修改用户密码
+ * @param {Object} data - 修改数据
+ * @param {number} data.user_id - 用户ID
+ * @param {string} data.password - 新密码
+ * @returns {Promise}
+ */
+export const updatePassword = (data) => {
+  return http.put(`/users/${data.user_id}/password`, { password: data.password });
+};
+
+/**
+ * 封禁/解封用户（仅管理员）
+ * @param {number} userId - 用户ID
+ * @param {number} current_user_id - 当前管理员ID
+ * @param {number} is_banned - 是否封禁：1-封禁，0-解封
+ * @returns {Promise}
+ */
+export const banUser = (userId, current_user_id, is_banned) => {
+  return http.put(`/users/${userId}/ban`, { is_banned }, { params: { current_user_id } });
+};
+
+/**
+ * 获取图片完整URL
+ * @param {string} imagePath - 图片相对路径
+ * @returns {string} 完整的图片URL
+ */
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  const baseURL = http.defaults.baseURL.replace('/api', '');
+  return `${baseURL}${imagePath}`;
 };
 
 

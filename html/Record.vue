@@ -48,7 +48,7 @@
           <div class="stat-card card">
             <div class="stat-icon" style="background: #fef3c7;">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 8V12L15 15M21 12C21 16.9706 16.0796 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div class="stat-content">
@@ -93,6 +93,7 @@
               <thead>
                 <tr>
                   <th>序号</th>
+                  <th>原图</th>
                   <th>识别时间</th>
                   <th>识别结果</th>
                   <th>操作</th>
@@ -102,24 +103,30 @@
                 <tr v-for="(record, index) in records" :key="record.id" class="table-row">
                   <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td>
+                    <div class="thumbnail-cell">
+                      <img
+                        v-if="record.origin_map_url"
+                        :src="getImageUrl(record.origin_map_url)"
+                        :alt="'记录' + ((currentPage - 1) * pageSize + index + 1)"
+                        class="thumbnail"
+                        @click="viewDetail(record)"
+                      />
+                      <div v-else class="no-thumbnail">无图</div>
+                    </div>
+                  </td>
+                  <td>
                     <div class="time-cell">
                       <svg class="time-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
-                      {{ formatTime(record.time) }}
+                      {{ record.create_time }}
                     </div>
                   </td>
                   <td>
-                    <span class="result-badge">{{ record.result }}</span>
+                    <span class="result-badge">{{ record.disease_name }}</span>
                   </td>
                   <td>
                     <div class="action-buttons">
-                      <button @click="viewDetail(record)" class="btn-action btn-view" title="查看详情">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M2.45825 12C3.73253 7.94288 7.52281 5 12.0004 5C16.4781 5 20.2684 7.94291 21.5426 12C20.2684 16.0571 16.4781 19 12.0005 19C7.52281 19 3.73253 16.0571 2.45825 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </button>
                       <button @click="deleteRecord(index, record.id)" class="btn-action btn-delete" title="删除">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -184,15 +191,23 @@
           <div class="modal-body">
             <div class="detail-item">
               <label>识别时间：</label>
-              <span>{{ formatTime(selectedRecord?.time) }}</span>
+              <span>{{ selectedRecord?.create_time }}</span>
             </div>
             <div class="detail-item">
               <label>识别结果：</label>
-              <span>{{ selectedRecord?.result }}</span>
+              <span class="result-badge">{{ selectedRecord?.disease_name }}</span>
             </div>
-            <div v-if="selectedRecord?.heatmap" class="detail-image">
+            <div class="detail-item">
+              <label>置信度：</label>
+              <span>{{ selectedRecord?.confidence ? (selectedRecord.confidence * 100).toFixed(2) + '%' : '--' }}</span>
+            </div>
+            <div v-if="selectedRecord?.origin_map_url" class="detail-image">
+              <label>原图：</label>
+              <img :src="getImageUrl(selectedRecord.origin_map_url)" alt="原图" />
+            </div>
+            <div v-if="selectedRecord?.heatmap_url" class="detail-image">
               <label>热力图：</label>
-              <img :src="selectedRecord.heatmap" alt="热力图" />
+              <img :src="getImageUrl(selectedRecord.heatmap_url)" alt="热力图" />
             </div>
           </div>
         </div>
@@ -246,13 +261,21 @@ export default {
     },
     async fetchStatistics() {
       try {
-        const response = await this.$api.getStatistics();
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        if (!userInfo.id) {
+          console.error('未找到用户ID');
+          return;
+        }
+
+        const response = await this.$api.getStatistics({
+          user_id: userInfo.id
+        });
         if (response.code === 200 && response.data) {
-          this.totalRecords = response.data.totalCount || 0;
-          this.todayRecords = response.data.todayCount || 0;
+          this.totalRecords = response.data.total_count || 0;
+          this.todayRecords = response.data.today_count || 0;
           
-          if (response.data.latestTime) {
-            this.recentTime = this.formatTime(response.data.latestTime);
+          if (response.data.latest_time) {
+            this.recentTime = this.formatTime(response.data.latest_time);
           }
         }
       } catch (error) {
@@ -264,24 +287,32 @@ export default {
       this.currentPage = page;
       
       try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        if (!userInfo.id) {
+          throw new Error('未找到用户ID，请重新登录');
+        }
+
         const response = await this.$api.getRecordList({
+          user_id: userInfo.id,
           page: page,
-          pageSize: this.pageSize
+          page_size: this.pageSize
         });
         
         if (response.code === 200 && response.data) {
           this.records = response.data.list || [];
           this.totalRecords = response.data.total || 0;
           
-          // 更新统计信息
           if (this.records.length > 0) {
-            this.recentTime = this.formatTime(this.records[0].createdAt || this.records[0].time);
+            this.recentTime = this.formatTime(this.records[0].create_time);
           }
         } else {
           throw new Error(response.message || '获取记录失败');
         }
       } catch (error) {
-        const errorMsg = error.response?.data?.message || error.message || '获取记录失败';
+        const errorMsg = error.response?.data?.detail ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        '获取记录失败';
         console.error('获取记录失败:', error);
         alert(errorMsg);
       } finally {
@@ -294,39 +325,43 @@ export default {
       }
       
       try {
-        const response = await this.$api.deleteRecord(recordId);
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        if (!userInfo.id) {
+          throw new Error('未找到用户ID，请重新登录');
+        }
+
+        const response = await this.$api.deleteRecord(recordId, userInfo.id);
         
         if (response.code === 200) {
           this.records.splice(index, 1);
           this.totalRecords--;
           alert('删除成功');
           
-          // 如果当前页没有记录了，返回上一页
           if (this.records.length === 0 && this.currentPage > 1) {
             this.changePage(this.currentPage - 1);
           } else {
-            // 刷新统计数据
             this.fetchStatistics();
           }
         }
       } catch (error) {
-        const errorMsg = error.response?.data?.message || '删除失败，请重试';
+        const errorMsg = error.response?.data?.detail ||
+                        error.response?.data?.message ||
+                        '删除失败，请重试';
         console.error('删除失败:', error);
         alert(errorMsg);
       }
     },
     async viewDetail(record) {
       try {
-        // 获取详细信息
-        const response = await this.$api.getRecordDetail(record.id);
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        if (!userInfo.id) {
+          throw new Error('未找到用户ID，请重新登录');
+        }
+
+        const response = await this.$api.getRecordDetail(record.id, userInfo.id);
         
         if (response.code === 200 && response.data) {
-          this.selectedRecord = {
-            ...record,
-            ...response.data,
-            // 如果有热力图URL，构建完整URL
-            heatmap: response.data.heatmapUrl ? this.$api.getImageUrl(response.data.heatmapUrl) : record.heatmap
-          };
+          this.selectedRecord = response.data;
         } else {
           this.selectedRecord = record;
         }
@@ -344,32 +379,49 @@ export default {
     changePage(page) {
       if (page < 1 || page > this.totalPages) return;
       this.fetchRecords(page);
-      // 滚动到顶部
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     async refreshRecords() {
       await this.fetchRecords(this.currentPage);
       await this.fetchStatistics();
     },
+    getImageUrl(imagePath) {
+      if (!imagePath) return '';
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      const baseURL = window.location.origin;
+      return `${baseURL}${imagePath}`;
+    },
     formatTime(time) {
       if (!time) return '--';
-      const date = new Date(time);
+
+      // 确保时间字符串格式正确
+      let timeStr = time;
+      if (typeof time === 'string') {
+        // 将 "YYYY-MM-DD HH:mm:ss" 转换为 "YYYY-MM-DDTHH:mm:ss"
+        timeStr = time.replace(' ', 'T');
+      }
+
+      const date = new Date(timeStr);
+
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return time; // 如果解析失败，返回原始字符串
+      }
+
       const now = new Date();
       const diff = now - date;
       
-      // 小于1分钟
       if (diff < 60000) {
         return '刚刚';
       }
-      // 小于1小时
       if (diff < 3600000) {
         return `${Math.floor(diff / 60000)}分钟前`;
       }
-      // 小于24小时
       if (diff < 86400000) {
         return `${Math.floor(diff / 3600000)}小时前`;
       }
-      // 显示完整时间
       return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
@@ -604,18 +656,28 @@ export default {
 
 .records-table th {
   padding: 16px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   font-weight: 600;
   color: var(--gray-700);
   border-bottom: 2px solid var(--gray-200);
 }
 
+.records-table th:nth-child(3) {
+  text-align: left;
+}
+
 .records-table td {
-  padding: 16px;
+  padding: 12px 16px;
   font-size: 14px;
   color: var(--gray-800);
   border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.records-table td:nth-child(3) {
+  text-align: left;
 }
 
 .table-row {
@@ -630,12 +692,50 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: flex-start;
 }
 
 .time-icon {
   width: 16px;
   height: 16px;
   color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.thumbnail-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.thumbnail {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid var(--gray-200);
+  display: block;
+  margin: 0 auto;
+}
+
+.thumbnail:hover {
+  border-color: var(--primary-blue);
+  transform: scale(1.05);
+}
+
+.no-thumbnail {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-100);
+  color: var(--gray-400);
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
 }
 
 .result-badge {
@@ -828,6 +928,15 @@ export default {
   border-radius: var(--border-radius-sm);
 }
 
+.detail-item .result-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--ultra-light-blue);
+  color: var(--primary-blue);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+}
+
 .detail-image {
   margin-top: 24px;
 }
@@ -842,8 +951,11 @@ export default {
 
 .detail-image img {
   width: 100%;
+  max-height: 400px;
+  object-fit: contain;
   border-radius: var(--border-radius-sm);
-  border: 1px solid var(--gray-200);
+  border: 2px solid var(--gray-200);
+  background: var(--gray-50);
 }
 
 /* 弹窗动画 */
